@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  mary-bridge:
+    build: .
+    container_name: openclaw-mary-bridge
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
+      - MARY_API_KEY=mary-wise-access-2026
+      - DISCORD_WEBHOOK=https://discord.com/api/webhooks/1491084299368267836/FmUZOzFNk4cjSoifEcLWWh9UnQP705DNpDYzvSKi0oC61S-mf8AgpkWGM734IdXtnRG-
+      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_MODEL=minimax-m2.7:cloud
+    volumes:
+      - ./to-discord:/app/to-discord
+    restart: unless-stopped
+    networks:
+      - mary-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+networks:
+  mary-network:
+    driver: bridge

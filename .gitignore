@@ -1,0 +1,12 @@
+node_modules/
+*.log
+logs/*
+images/*
+!images/.gitkeep
+to-discord/*
+!to-discord/.gitkeep
+.DS_Store
+.env
+*.pid
+*.seed
+*.pid.lock
