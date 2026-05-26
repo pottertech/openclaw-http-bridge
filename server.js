@@ -22,7 +22,7 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const PORT = process.env.PORT || 8080;
 const DISCORD_CHANNEL = process.env.DISCORD_CHANNEL || '1474777507554267237';
-const MARY_API_KEY = process.env.MARY_API_KEY || 'mary-wise-access-2026';
+const MARY_API_KEY = process.env.MARY_API_KEY || '[CHANGE THIS API KEY]';
 const DISCORD_WEBHOOK = process.env.DISCORD_WEBHOOK || '';
 const OLLAMA_HOST = process.env.OLLAMA_HOST || 'http://host.docker.internal:11434';
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'minimax-m2.7:cloud';
