@@ -108,7 +108,7 @@ You have access to real tools and the internet. Use them to provide concrete, ac
 function checkApiKey(req, res, next) {
   const key = req.headers['x-api-key'] || req.query.key;
   if (key !== MARY_API_KEY) {
-    return res.status(401).json({ error: 'Invalid or missing API key' });
+    return res.status(401).json({ error: 'Invalid or missing API key. Ensure you are sending the header as: x-api-key (not x_api_key or api-key)' });
   }
   next();
 }
