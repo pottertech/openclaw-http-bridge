@@ -5,6 +5,8 @@ images/*
 !images/.gitkeep
 to-discord/*
 !to-discord/.gitkeep
+uploads/*
+!uploads/.gitkeep
 .DS_Store
 .env
 *.pid

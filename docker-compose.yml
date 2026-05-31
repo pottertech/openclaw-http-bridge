@@ -14,6 +14,7 @@ services:
       - OLLAMA_MODEL=minimax-m2.7:cloud
     volumes:
       - ./to-discord:/app/to-discord
+      - ./uploads:/app/uploads
     restart: unless-stopped
     networks:
       - mary-network

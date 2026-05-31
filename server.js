@@ -17,8 +17,9 @@ const http = require('http');
 const https = require('https');
 
 const app = express();
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
+// Increase body parser limits for large files
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
 
 const PORT = process.env.PORT || 8080;
 const DISCORD_CHANNEL = process.env.DISCORD_CHANNEL || '1474777507554267237';
@@ -380,6 +381,114 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', service: 'mary-bridge', version: '2.2.0', ai: 'enabled', discord: 'enabled' });
 });
 
+// File upload endpoint
+app.post('/upload', checkApiKey, async (req, res) => {
+  try {
+    const { filename, content, contentType = 'application/octet-stream', from = 'Mary Wise' } = req.body;
+
+    if (!filename || !content) {
+      return res.status(400).json({
+        error: 'filename and content (base64) are required',
+        example: { filename: 'report.pdf', content: 'base64encodedstring...', from: 'Mary Wise' }
+      });
+    }
+
+    // Decode base64 content
+    const buffer = Buffer.from(content, 'base64');
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const filepath = path.join(uploadsDir, filename);
+    fs.writeFileSync(filepath, buffer);
+
+    const entry = {
+      id: Date.now().toString(),
+      from,
+      message: `Uploaded file: ${filename} (${buffer.length} bytes)`,
+      timestamp: new Date().toISOString(),
+      status: 'uploaded',
+      attachments: [{
+        type: 'file',
+        filename,
+        localPath: filepath,
+        contentType,
+        size: buffer.length
+      }]
+    };
+    messageLog.push(entry);
+
+    // Notify Discord
+    await notifyDiscord(entry);
+
+    res.json({
+      success: true,
+      messageId: entry.id,
+      filename,
+      size: buffer.length,
+      localPath: filepath,
+      status: 'File uploaded successfully'
+    });
+
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({
+      error: 'Failed to upload file',
+      details: String(error)
+    });
+  }
+});
+
+// Download file endpoint
+app.get('/download/:filename', checkApiKey, (req, res) => {
+  try {
+    const filename = req.params.filename;
+    const filepath = path.join(__dirname, 'uploads', filename);
+    
+    if (!fs.existsSync(filepath)) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+    
+    res.sendFile(filepath);
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({
+      error: 'Failed to download file',
+      details: String(error)
+    });
+  }
+});
+
+// List uploaded files
+app.get('/files', checkApiKey, (req, res) => {
+  try {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadsDir)) {
+      return res.json({ files: [] });
+    }
+    
+    const files = fs.readdirSync(uploadsDir).map(filename => {
+      const filepath = path.join(uploadsDir, filename);
+      const stats = fs.statSync(filepath);
+      return {
+        filename,
+        size: stats.size,
+        created: stats.birthtime,
+        modified: stats.mtime
+      };
+    });
+    
+    res.json({ files });
+  } catch (error) {
+    console.error('File listing error:', error);
+    res.status(500).json({
+      error: 'Failed to list files',
+      details: String(error)
+    });
+  }
+});
+
 // Main completion endpoint
 app.post('/complete', checkApiKey, async (req, res) => {
   try {
@@ -496,9 +605,13 @@ app.get('/', (req, res) => {
     version: '2.2.0',
     ai: 'enabled',
     discord: 'enabled',
+    file_upload: 'enabled',
     endpoints: {
       health: 'GET /health - Check service status',
       complete: 'POST /complete - Send a message',
+      upload: 'POST /upload - Upload a file (base64)',
+      download: 'GET /download/:filename - Download a file',
+      files: 'GET /files - List uploaded files',
       messages: 'GET /messages - View message history'
     },
     usage: {
