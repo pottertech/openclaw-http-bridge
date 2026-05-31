@@ -9,6 +9,7 @@ A Dockerized HTTP completion bridge that connects external users to your AI assi
 - **Image Generation** via Pollinations AI (free, no API key)
 - **Map Generation** (via URL-based services)
 - **PDF Document Creation**
+- **File Upload/Download** — send and receive files up to 100MB
 - **Discord Webhook Notifications** — automatically forwards all conversations
 - **API Key Authentication** — secure with configurable keys
 - **Conversation History** — maintains context across messages
@@ -104,6 +105,68 @@ Send a message to the AI assistant.
 ### GET /health
 Check bridge status.
 
+### POST /upload
+Upload a file via base64 encoding (up to 100MB).
+
+**Headers:**
+- `Content-Type: application/json`
+- `x-api-key: your-api-key`
+
+**Body:**
+```json
+{
+  "filename": "report.pdf",
+  "content": "base64encodedcontent...",
+  "contentType": "application/pdf",
+  "from": "User Name"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "messageId": "1234567890",
+  "filename": "report.pdf",
+  "size": 45678,
+  "localPath": "/app/uploads/report.pdf",
+  "status": "File uploaded successfully"
+}
+```
+
+### GET /download/:filename
+Download an uploaded file.
+
+**Headers:**
+- `x-api-key: your-api-key`
+
+**Example:**
+```bash
+curl http://localhost:8080/download/report.pdf \
+  -H "x-api-key: your-api-key" \
+  -o report.pdf
+```
+
+### GET /files
+List all uploaded files.
+
+**Headers:**
+- `x-api-key: your-api-key`
+
+**Response:**
+```json
+{
+  "files": [
+    {
+      "filename": "report.pdf",
+      "size": 45678,
+      "created": "2026-05-30T12:00:00.000Z",
+      "modified": "2026-05-30T12:00:00.000Z"
+    }
+  ]
+}
+```
+
 ### GET /messages
 View message history (requires API key).
 
@@ -116,6 +179,8 @@ View message history (requires API key).
 | `OLLAMA_HOST` | `http://host.docker.internal:11434` | Ollama server URL |
 | `OLLAMA_MODEL` | `minimax-m2.7:cloud` | AI model name |
 | `PORT` | `8080` | HTTP port |
+| `IMAGE_OUTPUT_DIR` | `/app/images` | Image output directory |
+| `UPLOAD_DIR` | `/app/uploads` | File upload directory |
 
 ## Image Generation
 
@@ -145,6 +210,7 @@ All messages are automatically forwarded to Discord as rich embeds:
 ├── forwarder.py           # Python file watcher
 ├── notify.py              # Notification utility
 ├── images/                # Generated images
+├── uploads/               # Uploaded files
 ├── to-discord/            # Notification queue
 └── logs/                  # Application logs
 ```
